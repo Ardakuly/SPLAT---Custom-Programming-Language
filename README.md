@@ -11,7 +11,7 @@ LEXER/TOKENIZER – This takes a single SPLAT program file, and performs lexical
  EXECUTOR – This component will run the actual program by essentially executing one-by-one the individual program statements in the program body ASTs.
  
  
- -------------------------------------------------------------------------> GRAMMAR <---------------------------------------------------------------------
+         ----------------------------------------------------------------> GRAMMAR <--------------------------------------------------------
    
 <program> ::= program <decls> begin <stmts> end ;
 
@@ -70,4 +70,4 @@ LEXER/TOKENIZER – This takes a single SPLAT program file, and performs lexical
 
 <string-literal> ::= "...sequence of non-double-quote, non-backslash displayable characters and spaces... "
 
--------------------------------------------------------------------------> GRAMMAR <---------------------------------------------------------------------
+         ----------------------------------------------------------------> GRAMMAR <--------------------------------------------------------
