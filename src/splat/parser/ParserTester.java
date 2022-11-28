@@ -2,6 +2,7 @@ package splat.parser;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
 
 import splat.lexer.LexException;
@@ -85,7 +86,7 @@ public class ParserTester {
 	private void runTest(File testFile) throws IOException, LexException {
 
 		Lexer lexer = new Lexer(testFile);
-		List<Token> tokenz = lexer.tokenize();
+		LinkedList<Token> tokenz = lexer.tokenize();
 		Parser parser = new Parser(tokenz);
 		
 		

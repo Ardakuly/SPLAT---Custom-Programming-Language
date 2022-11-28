@@ -12,7 +12,7 @@ public class Lexer {
 		this.progFile = progFile;
 	}
 
-	public List<Token> tokenize() throws LexException {
+	public LinkedList<Token> tokenize() throws LexException {
 
 		LinkedList<Token> tokens = new LinkedList<>();
 
@@ -50,6 +50,7 @@ public class Lexer {
 				int column = 1;
 
 				for (String e : separated) {
+
 					boolean space = true;
 
 					for (int i = 0; i < e.length(); i++) {
@@ -84,7 +85,7 @@ public class Lexer {
 								tokens.add(new Token(operator + "", row, column-operator.length()+1));
 								operator.setLength(0);
 							}
-
+							if (word.length() > 0) addWordOrOperator(operator, word, tokens, quote, row, column);
 							operator.append(e.charAt(i));
 						} else if (!quote.isEmpty()) {
 							word.append(e.charAt(i));

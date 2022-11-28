@@ -6,7 +6,7 @@ import splat.lexer.Token;
 public class ParseException extends SplatException {
 	
 	public ParseException(String msg, Token tok) {
-		super(msg, tok.getLine(), tok.getColumn());
+		super(msg, tok.getRow(), tok.getColumn());
 	}
 	
 	public ParseException(String msg, int line, int column) {

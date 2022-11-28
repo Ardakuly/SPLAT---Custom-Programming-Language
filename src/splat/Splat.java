@@ -7,6 +7,7 @@ import splat.parser.Parser;
 import splat.parser.elements.ProgramAST;
 
 import java.io.File;
+import java.util.LinkedList;
 import java.util.List;
 
 public class Splat {
@@ -21,7 +22,7 @@ public class Splat {
 		
 		// Step 1.  Tokenize
 		Lexer lexer = new Lexer(progFile);
-		List<Token> tokens = lexer.tokenize();
+		LinkedList<Token> tokens = lexer.tokenize();
 		
 		// Step 2.  Parse
 		 Parser parser = new Parser(tokens);

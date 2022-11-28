@@ -6,21 +6,22 @@ import splat.parser.elements.Statement;
 
 import java.util.List;
 
-public class IfThenEndIf extends Statement {
+public class If extends Statement {
 
     private List<Expression> expressions;
     private List<Statement> statementsThen;
+    private List<Statement> statementsElse;
 
-    public IfThenEndIf(Token tok) {
+    public If(Token tok) {
         super(tok);
     }
 
-    public List<Expression> getExpression() {
+    public List<Expression> getExpressions() {
         return expressions;
     }
 
-    public void setExpression(List<Expression> expression) {
-        this.expressions = expression;
+    public void setExpressions(List<Expression> expressions) {
+        this.expressions = expressions;
     }
 
     public List<Statement> getStatementsThen() {
@@ -29,5 +30,13 @@ public class IfThenEndIf extends Statement {
 
     public void setStatementsThen(List<Statement> statementsThen) {
         this.statementsThen = statementsThen;
+    }
+
+    public List<Statement> getStatementsElse() {
+        return statementsElse;
+    }
+
+    public void setStatementsElse(List<Statement> statementsElse) {
+        this.statementsElse = statementsElse;
     }
 }

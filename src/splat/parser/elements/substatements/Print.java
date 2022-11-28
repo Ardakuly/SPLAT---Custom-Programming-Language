@@ -8,17 +8,17 @@ import java.util.List;
 
 public class Print extends Statement {
 
-    private List<Expression> expressions;
+    private List<Expression> expression;
 
     public Print(Token tok) {
         super(tok);
     }
 
     public List<Expression> getExpressions() {
-        return expressions;
+        return expression;
     }
 
-    public void setExpressions(List<Expression> expressions) {
-        this.expressions = expressions;
+    public void setExpressions(List<Expression> expression) {
+        this.expression = expression;
     }
 }

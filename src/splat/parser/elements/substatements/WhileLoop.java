@@ -8,19 +8,19 @@ import java.util.List;
 
 public class WhileLoop extends Statement {
 
-    private List<Expression> expressions;
+    private List<Expression> expression;
     private List<Statement> statements;
 
     public WhileLoop(Token tok) {
         super(tok);
     }
 
-    public List<Expression> getExpressions() {
-        return expressions;
+    public List<Expression> getExpression() {
+        return expression;
     }
 
-    public void setExpressions(List<Expression> expressions) {
-        this.expressions = expressions;
+    public void setExpression(List<Expression> expression) {
+        this.expression = expression;
     }
 
     public List<Statement> getStatements() {
