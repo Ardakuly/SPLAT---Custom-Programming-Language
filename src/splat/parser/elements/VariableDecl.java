@@ -1,22 +1,14 @@
 package splat.parser.elements;
 
 import splat.lexer.Token;
-import splat.parser.elements.primitiveDataType.DataType;
 
 public class VariableDecl extends Declaration {
 
-	private DataType type;
-	private String label;
+	private Type type;
 	private String value;
 
 	
-	// Need to add extra arguments for setting fields in the constructor 
-	public VariableDecl(Token tok, DataType type, String label, String value) {
-		super(tok);
-		this.type = type;
-		this.label = label;
-		this.value = value;
-	}
+	// Need to add extra arguments for setting fields in the constructor
 
 	public VariableDecl(Token tok) {
 		super(tok);
@@ -25,20 +17,12 @@ public class VariableDecl extends Declaration {
 	// Getters?
 
 
-	public DataType getType() {
+	public Type getType() {
 		return type;
 	}
 
-	public void setType(DataType type) {
+	public void setType(Type type) {
 		this.type = type;
-	}
-
-	public String getLabel() {
-		return label;
-	}
-
-	public void setLabel(String label) {
-		this.label = label;
 	}
 
 	public String getValue() {

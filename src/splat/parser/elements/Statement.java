@@ -1,6 +1,9 @@
 package splat.parser.elements;
 
 import splat.lexer.Token;
+import splat.semanticanalyzer.SemanticAnalysisException;
+
+import java.util.Map;
 
 public abstract class Statement extends ASTElement {
 
@@ -16,9 +19,9 @@ public abstract class Statement extends ASTElement {
 	 * performing semantic analysis and type retrieval for the 
 	 * sub-expressions.
 	 */
-//	 public abstract void analyze(Map<String, FunctionDecl> funcMap,
-//	                              Map<String, Type> varAndParamMap);
-	
+	 public abstract void analyze(Map<String, FunctionDecl> funcMap,
+								  Map<String, Type> varAndParamMap) throws SemanticAnalysisException;
+
 	/**
 	 * This will be needed for Phase 4 - this abstract method will need to be
 	 * implemented by every Statement subclass.  This method is used to 
@@ -28,5 +31,6 @@ public abstract class Statement extends ASTElement {
 	 */
 //	 public abstract void execute(Map<String, FunctionDecl> funcMap,
 //	                              Map<String, Value> varAndParamMap) 
-//										throws ReturnFromCall;   
+//										throws ReturnFromCall;
+
 }

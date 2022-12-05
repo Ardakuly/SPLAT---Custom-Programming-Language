@@ -2,24 +2,44 @@ package splat.parser.elements.substatements;
 
 import splat.lexer.Token;
 import splat.parser.elements.Expression;
+import splat.parser.elements.FunctionDecl;
 import splat.parser.elements.Statement;
+import splat.parser.elements.Type;
+import splat.semanticanalyzer.SemanticAnalysisException;
 
 import java.util.List;
+import java.util.Map;
 
 public class WhileLoop extends Statement {
 
-    private List<Expression> expression;
+    private Expression expression;
     private List<Statement> statements;
 
     public WhileLoop(Token tok) {
         super(tok);
     }
 
-    public List<Expression> getExpression() {
+    @Override
+    public void analyze(Map<String, FunctionDecl> funcMap, Map<String, Type> varAndParamMap) throws SemanticAnalysisException {
+        // Checking for expression
+
+        if (Type.Boolean != expression.analyzeAndGetType(funcMap, varAndParamMap)) {
+            throw new SemanticAnalysisException("Expression type is not boolean", this);
+        }
+
+
+        // Checking for statements
+        for (Statement statement : statements) {
+            statement.analyze(funcMap, varAndParamMap);
+        }
+
+    }
+
+    public Expression getExpression() {
         return expression;
     }
 
-    public void setExpression(List<Expression> expression) {
+    public void setExpression(Expression expression) {
         this.expression = expression;
     }
 

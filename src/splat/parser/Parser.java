@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 import splat.lexer.Token;
 import splat.parser.elements.*;
-import splat.parser.elements.primitiveDataType.DataType;
+import splat.parser.elements.Type;
 import splat.parser.elements.subexpressions.*;
 import splat.parser.elements.substatements.*;
 
@@ -83,9 +83,7 @@ public class Parser {
 			
 			checkNext("begin");
 
-			System.out.println(tokens.getFirst() + "-----> parse");
-
-			List<Statement> stmts = parseStmts(new ArrayList<>());
+			List<Statement> stmts = parseStmts(new ArrayList<>(), "0program");
 			
 			checkNext("end");
 			checkNext(";");
@@ -151,9 +149,10 @@ public class Parser {
 
 		checkNext("("); // remove '('
 
+		List<VariableDecl> parameters = new ArrayList<>();
+
 		if (!peekNext(")")) {
 
-			List<VariableDecl> parameters = new ArrayList<>();
 
 			do {
 				if (peekNext(",")) checkNext(",");
@@ -162,9 +161,9 @@ public class Parser {
 
 			} while (peekNext(","));
 
-			functionDecl.setParameters(parameters);
-
 		}
+
+		functionDecl.setParameters(parameters);
 
 		checkNext(")"); // remove ')'
 
@@ -176,14 +175,14 @@ public class Parser {
 
 		Token returnType = tokens.removeFirst(); // Take return statement
 
-		if (DataType.String.name().equals(returnType.getValue()) ) {
-			functionDecl.setReturnType(DataType.String);
-		} else if (DataType.Integer.name().equals(returnType.getValue())) {
-			functionDecl.setReturnType(DataType.Integer);
-		} else if (DataType.Boolean.name().equals(returnType.getValue())) {
-			functionDecl.setReturnType(DataType.Boolean);
+		if (Type.String.name().equals(returnType.getValue()) ) {
+			functionDecl.setReturnType(Type.String);
+		} else if (Type.Integer.name().equals(returnType.getValue())) {
+			functionDecl.setReturnType(Type.Integer);
+		} else if (Type.Boolean.name().equals(returnType.getValue())) {
+			functionDecl.setReturnType(Type.Boolean);
 		}else if ("void".equals(returnType.getValue())) {
-			functionDecl.setReturnType(DataType.Boolean);
+			functionDecl.setReturnType(Type.Void);
 		} else {
 			throw new ParseException("ReturnType for variable does not meet requirements --->" + returnType.getValue(), returnType);
 		}
@@ -199,27 +198,20 @@ public class Parser {
 
 			} while (!tokens.getFirst().getValue().equals("begin") );
 
-//			checkNext(";"); // remove ';'
     	}
 
 		checkNext("begin");
 
 		if (!peekNext("end")) {
 
-			functionDecl.setStatements(new ArrayList<>(parseStmts(new ArrayList<>())));
+			functionDecl.setStatements(new ArrayList<>(parseStmts(new ArrayList<>(), functionDecl.getLabel())));
 
 		}
 
-		System.out.println(tokens.getFirst() + "-----> ");
-
 		statements = new ArrayList<>();
-
-
 
 		checkNext("end"); //remove 'end'
 		checkNext(";"); //remove ';'
-
-		System.out.println(tokens.getFirst() + "-----> ");
 
 		declarations.add(functionDecl.getLabel());
 
@@ -253,12 +245,12 @@ public class Parser {
 			throw new ParseException("Variable name does not meet requirements", labelToken);
 		}
 
-		if (DataType.String.name().equals(typeToken.getValue()) ) {
-			varDecl.setType(DataType.String);
-		} else if (DataType.Integer.name().equals(typeToken.getValue())) {
-			varDecl.setType(DataType.Integer);
-		} else if (DataType.Boolean.name().equals(typeToken.getValue())) {
-			varDecl.setType(DataType.Boolean);
+		if (Type.String.name().equals(typeToken.getValue()) ) {
+			varDecl.setType(Type.String);
+		} else if (Type.Integer.name().equals(typeToken.getValue())) {
+			varDecl.setType(Type.Integer);
+		} else if (Type.Boolean.name().equals(typeToken.getValue())) {
+			varDecl.setType(Type.Boolean);
 		} else {
 			throw new ParseException("DataType for variable does not meet requirements "
 					+ typeToken.getValue() + " " + typeToken.getRow(), typeToken);
@@ -275,17 +267,17 @@ public class Parser {
 	 * <stmts> ::= (  <stmt>  )*
 	 */
 
-	private List<Statement> parseStmts(List<Statement> statements) throws ParseException {
+	private List<Statement> parseStmts(List<Statement> statements, String whereItBelongs) throws ParseException {
 
 		while (!peekNext("end") && !peekNext("else")) {
-			statements = parseStmt(statements);
+			statements = parseStmt(statements, whereItBelongs);
 		}
 
 		return statements;
 
 	}
 
-	private List<Statement> parseStmt(List<Statement> statements) throws ParseException {
+	private List<Statement> parseStmt(List<Statement> statements, String whereItBelongs) throws ParseException {
 
 		if (peekNext("end")) return statements;
 
@@ -299,21 +291,18 @@ public class Parser {
 			Token ifToken = tokens.removeFirst();
 			If ifStatement = new If(ifToken);
 
-			checkNext("("); //remove '('
+			if(peekNext("(") && peekTwoAhead("(")) checkNext("("); //remove '('
 
-			ifStatement.setExpressions(parseExpr());
+			ifStatement.setExpression(parseExpr(whereItBelongs));
 
-			System.out.println(tokens.getFirst());
-
-			checkNext(")"); //remove '('
+			if(peekNext(")")) checkNext(")"); //remove '('
 			checkNext("then"); //remove 'then'
 
-			ifStatement.setStatementsThen(parseStmts(new ArrayList<>()));
-
+			ifStatement.setStatementsThen(parseStmts(new ArrayList<>(), whereItBelongs));
 
 			if (peekNext("else")) {
 				checkNext("else"); //remove 'else'
-				ifStatement.setStatementsElse(parseStmts(new ArrayList<>()));
+				ifStatement.setStatementsElse(parseStmts(new ArrayList<>(), whereItBelongs));
 			}
 
 			checkNext("end"); //remove 'end'
@@ -322,21 +311,25 @@ public class Parser {
 
 			parsed = true;
 
+			statements.add(ifStatement);
+
 		} else if (peekNext("print")) {
 
 			Token printToken = tokens.removeFirst();
 
 			Print printStatement = new Print(printToken);
 
-			if (peekNext("(")) checkNext("(");
+			if (peekNext("(") && peekTwoAhead("(")) checkNext("(");
 
 			if (peekTwoAhead(")")) throw new ParseException("Invalid use of parenthesis", tokens.getFirst());
 
-			printStatement.setExpressions(parseExpr());
+			printStatement.setExpressions(parseExpr(whereItBelongs));
 
 			if (peekNext(")")) checkNext(")");
 
 			checkNext(";");
+
+			statements.add(printStatement);
 
 			return statements;
 
@@ -348,6 +341,8 @@ public class Parser {
 
 			checkNext(";"); //remove ';'
 
+			statements.add(printLineStatement);
+
 			return statements;
 
 		} else if (peekNext("return")) {
@@ -356,13 +351,15 @@ public class Parser {
 
 			Return returnStatement = new Return(returnToken);
 
-			if (peekNext("(")) checkNext("(");
+			if (peekNext("(") && peekTwoAhead("(")) checkNext("(");
 
-			if (!peekNext(";")) returnStatement.setExpressions(parseExpr());
+			if (!peekNext(";")) returnStatement.setExpression(parseExpr(whereItBelongs));
 
 			if (peekNext(")")) checkNext(")");
 
 			checkNext(";"); //remove ';'
+
+			statements.add(returnStatement);
 
 			return statements;
 
@@ -372,14 +369,15 @@ public class Parser {
 
 			WhileLoop whileLoopStatement = new WhileLoop(whileToken);
 
-			checkNext("(");
+			if(peekNext("(") && peekTwoAhead("(")) checkNext("(");
 
-			whileLoopStatement.setExpression(parseExpr());
+			whileLoopStatement.setExpression(parseExpr(whereItBelongs));
 
-			checkNext(")");
+			if(peekNext(")")) checkNext(")");
+
 			checkNext("do");
 
-			whileLoopStatement.setStatements(parseStmt(new ArrayList<>()));
+			whileLoopStatement.setStatements(parseStmt(new ArrayList<>(), whereItBelongs));
 
 			checkNext("end");
 			checkNext("while");
@@ -393,10 +391,6 @@ public class Parser {
 
 			Token initializationToken = tokens.removeFirst();
 
-//			if (!varExist.contains(initializationToken.getValue())) {
-//				throw new ParseException("Variable has not been inirialized ---> " + initializationToken.getValue(), initializationToken);
-//			}
-
 			Initialization initializationStatement =
 					new Initialization(initializationToken);
 
@@ -405,19 +399,10 @@ public class Parser {
 			checkNext(":");
 			checkNext("=");
 
-//			boolean exist = false;
-//
-//			for (String declaration : declarations) {
-//				if (declaration.equals(initializationStatement.getLabel())) {
-//					exist = true; break;
-//				}
-//			}
 
-//			if (!exist) throw new ParseException("Variable does not exist", initializationToken);
+			if (peekNext("(") && peekTwoAhead("(")) checkNext("(");
 
-			if (peekNext("(")) checkNext("(");
-
-			initializationStatement.setLiteral(parseExpr());
+			initializationStatement.setLiteral(parseExpr(whereItBelongs));
 
 			if (peekNext(")")) checkNext(")");
 
@@ -425,22 +410,29 @@ public class Parser {
 
 			parsed = true;
 
+			statements.add(initializationStatement);
+
 		} else if (isValid && peekTwoAhead("(")) {
 
 			Token functionCallToken = tokens.removeFirst();
 
 			FunctionCall functionCallStatement = new FunctionCall(functionCallToken);
 
-			checkNext("(");
+			if(peekNext("(") && peekTwoAhead("(")) checkNext("(");
+
+			List<Expression> arguments = new ArrayList<>();
+
+			while (!peekNext(")")) {
+				if (peekNext(",")) checkNext(",");
+				Expression expression = parseExpr(whereItBelongs);
+				if (expression != null) arguments.add(expression);
+			}
+
+			functionCallStatement.setArguments(arguments);
 
 			functionCallStatement.setLabel(functionCallToken.getValue());
 
-
-			if (!peekNext(")")) {
-				functionCallStatement.setParameters(parseExpr());
-			}
-
-			checkNext(")");
+			if(peekNext(")")) checkNext(")");
 
 			checkNext(";");
 
@@ -457,425 +449,131 @@ public class Parser {
 	}
 
 
-	private List<Expression> parseExpr() throws ParseException {
+	private Expression parseExpr(String whereItBelongs) throws ParseException {
 
-		LinkedList<Expression> expressions = new LinkedList<>();
+		Token token = tokens.getFirst();
 
-		while ((!peekNext(")") && (!peekTwoAhead("then"))) && (!peekNext(")") && (!peekTwoAhead("do")))
-				 && (!peekNext(";"))) { //&& ((!peekNext(")") && !peekTwoAhead(";")))
+		Matcher name = namePattern.matcher(token.getValue());
 
-			if (peekNext(",")) checkNext(",");
+		boolean isMatchName = name.find() && (!token.getValue().startsWith("" + (char)34) && !token.getValue().endsWith("" + (char)34));
 
-			boolean openScope = false;
-			boolean closeScope = false;
+		Matcher literal = integerPattern.matcher(token.getValue());
 
-			openScope = (peekNext("(")) ? true : false;
-			if (openScope) checkNext("(");
-			closeScope = (peekTwoAhead(")")) ? true : false;
+		boolean isMatchLiteral = literal.find();
 
-			boolean executed = false;
+		if (isMatchLiteral || tokens.getFirst().getValue().equals("0")) {
+
+			Token literalToken = tokens.removeFirst();
+
+			Expression expression = new Literal(literalToken, literalToken.getValue(), Type.Integer);
+
+			return expression;
+
+		} else if (tokens.getFirst().getValue().startsWith("" + (char)34) && tokens.getFirst().getValue().endsWith("" + (char)34)) {
+
+			Token literalToken = tokens.removeFirst();
+
+			Expression expression = new Literal(literalToken, literalToken.getValue(), Type.String);
+
+			return expression;
+
+		} else if (tokens.getFirst().getValue().equals("true") || tokens.getFirst().getValue().equals("false")) {
+
+			Token literalToken = tokens.removeFirst();
+
+			Expression expression = new Literal(literalToken, literalToken.getValue(), Type.Boolean);
+
+			return expression;
+
+		}else if (isMatchName && !peekTwoAhead("(") && !token.getValue().equals("not")) {
+			Token labelToken = tokens.removeFirst();
+			Expression label = new Label(labelToken, labelToken.getValue());
+			return label;
+		} else if (isMatchName && peekTwoAhead("(")) {
+			Token nVFunctionCallToken = tokens.removeFirst();
+			checkNext("(");
+			List<Expression> arguments = new LinkedList<>();
+
+			while (!peekNext(")")) {
+				if (peekNext(",")) checkNext(",");
+
+				arguments.add(parseExpr(whereItBelongs));
+			}
+
+			checkNext(")");
+
+			//added func label
+			Expression nVFunctionCall = new Function(nVFunctionCallToken, nVFunctionCallToken.getValue(), arguments);
+
+			return nVFunctionCall;
+
+		} else if (peekNext("(")) {
+
+			checkNext("(");
+
+			boolean isUnaryOperator = false;
+
+			for (String operator : Arrays.asList("-", "not")) {
+
+//				Matcher matcher = namePattern.matcher(tokens.get(1).getValue());
+				if (peekNext(operator)) {
+					isUnaryOperator = true;
+					break;
+				}
+
+			}
+
+
+			Expression unaryOperatorExpression = null;
+
+			if (isUnaryOperator) {
+				Token unaryOperatorToken = tokens.removeFirst();
+				unaryOperatorExpression = new UnaryOperator(unaryOperatorToken, unaryOperatorToken.getValue(), parseExpr(whereItBelongs));
+				checkNext(")");
+			}
+
+
+			boolean isBinaryOperator = false;
 
 			for (String operator : Arrays.asList("and", "or", ">", "<", "==", ">=", "<=", "+", "-", "*", "/", "%")) {
+				if (peekNext(operator) || peekTwoAhead(operator)) {
+					isBinaryOperator = true;
+				}
+			}
 
-				if (peekNext(operator) && expressions.size() > 0) {
+			if (isBinaryOperator) {
+				Expression expressionLeft = (isUnaryOperator) ?  unaryOperatorExpression : parseExpr(whereItBelongs);
+				Token binaryOperatorToken = tokens.removeFirst();
+				Expression binaryOperatorExpression = new BinaryOperation
+						(binaryOperatorToken, binaryOperatorToken.getValue(), expressionLeft, parseExpr(whereItBelongs));
+				checkNext(")");
 
-					if (Arrays.asList(BinaryOperation.class, BinaryOperation.class)
-							.contains(expressions.getLast().getClass())) {
-						throw new ParseException("Invalid use case of expression", tokens.getFirst());
-					} else if (Arrays.asList("false", "true").contains(expressions.getLast().getToken().getValue())) {
-						throw new ParseException("Invalid use case of expression", tokens.getFirst());
+				boolean isLeft = false;
+
+				for (String operator : Arrays.asList("and", "or", ">", "<", "==", ">=", "<=", "+", "-", "*", "/", "%")) {
+					if (peekNext(operator)) {
+						isLeft = true;
 					}
-
-					Token binaryOperatorToken = tokens.removeFirst();
-
-					BinaryOperation binaryOperator = new BinaryOperation(binaryOperatorToken);
-
-					binaryOperator.setOperator(binaryOperatorToken.getValue());
-
-					binaryOperator.setToken(binaryOperatorToken);
-
-					expressions.add(binaryOperator);
-
-					executed = true;
-
-					break;
-
 				}
 
+				if (isLeft) {
+					Token binaryOperatorTokenLeft = tokens.removeFirst();
+					Expression binaryOperatorLeftExpression = new BinaryOperation
+							(binaryOperatorTokenLeft, binaryOperatorTokenLeft.getValue(), binaryOperatorExpression, parseExpr(whereItBelongs));
+					checkNext(")");
+
+					return binaryOperatorLeftExpression;
+				}
+
+				return binaryOperatorExpression;
 			}
 
-			if (executed) continue;
 
-			for (String operator : Arrays.asList("not", "-")) {
+			return unaryOperatorExpression;
 
-				if (peekNext(operator)) {
-
-//					if (expressions.size() > 0) {
-//						if (expressions.getLast().getClassType() != BinaryOperation.class) {
-//							throw new ParseException("Not valid expression use case" + tokens.getFirst().getRow(), tokens.getFirst());
-//						}
-//					}
-
-					Token unaryOperatorToken = tokens.removeFirst();
-
-					UnaryOperator unaryOperator = new UnaryOperator(unaryOperatorToken);
-
-					String value = (openScope) ? "(" + unaryOperatorToken.getValue() : unaryOperatorToken.getValue();
-
-					if (closeScope) throw new ParseException("Unary Operator does not have operand", unaryOperatorToken);
-
-					openScope = false;
-
-					unaryOperator.setOperator(value);
-
-					unaryOperator.setToken(unaryOperatorToken);
-
-					expressions.add(unaryOperator);
-
-					executed = true;
-
-					break;
-
-				}
-
-			}
-
-			if (executed) continue;
-
-			Matcher matcherInteger = integerPattern.matcher(tokens.getFirst().getValue());
-
-			if (tokens.getFirst().getValue().startsWith("" + (char)34) && tokens.getFirst().getValue().endsWith("" + (char)34)) {
-
-//				if (expressions.size() > 0) {
-//					if (expressions.getLast().getClass() == BinaryOperation.class) {
-//						throw new ParseException("Invalid use case of expression", tokens.getFirst());
-//					}
-//				}
-
-				Token stringToken = tokens.removeFirst();
-				Literal string = new Literal(stringToken);
-				string.setType(DataType.String.name());
-
-				String word = (openScope) ? "(" + stringToken.getValue() : stringToken.getValue();
-
-				if ((closeScope && !peekTwoAhead("then"))
-						&& (closeScope && !peekTwoAhead("do"))
-						&& (closeScope && !peekTwoAhead(";"))){
-					word =  word + ")";
-					checkNext(")");
-				}
-
-				string.setValue(word);
-				string.setToken(stringToken);
-
-				openScope = false;
-				closeScope = false;
-				expressions.add(string);
-
-				executed = true;
-			} else if (matcherInteger.find() || tokens.getFirst().getValue().equals("0")) {
-
-//				if (expressions.size() > 0) {
-//					if (expressions.getLast().getClassType() != BinaryOperation.class &&
-//							expressions.getLast().getClassType() != UnaryOperator.class &&
-//							expressions.getLast().getClassType() != Label.class) {
-//						throw new ParseException("Not valid expression use case" + tokens.getFirst().getRow(), tokens.getFirst());
-//					}
-//				}
-
-				Token integerToken = tokens.removeFirst();
-				Literal integer = new Literal(integerToken);
-				integer.setType(DataType.Integer.name());
-
-				String value = (openScope) ? "(" + integerToken.getValue() : integerToken.getValue();
-
-				if ((closeScope && !peekTwoAhead("then"))
-						&& (closeScope && !peekTwoAhead("do"))
-						&& (closeScope && !peekTwoAhead(";"))){
-					value =  value + ")";
-					checkNext(")");
-				}
-
-				integer.setValue(value);
-
-				openScope = false;
-				closeScope = false;
-
-				integer.setToken(integerToken);
-				expressions.add(integer);
-
-				executed = true;
-			} else if (tokens.getFirst().getValue().equals("true") || tokens.getFirst().getValue().equals("false")) {
-
-//				if (expressions.size() != 0) {
-//					if (expressions.getLast().getClassType() != BinaryOperation.class &&
-//						expressions.getLast().getClassType() != UnaryOperator.class &&
-//						expressions.getLast().getClassType() != Label.class) {
-//					throw new ParseException("Not valid expression use case" + tokens.getFirst().getRow(), tokens.getFirst());
-//				}
-
-				Token booleanToken = tokens.removeFirst();
-				Literal booleaN = new Literal(booleanToken);
-				booleaN.setType(DataType.Boolean.name());
-
-				String value = (openScope) ? "(" + booleanToken.getValue() : booleanToken.getValue();
-
-				if ((closeScope && !peekTwoAhead("then"))
-						&& (closeScope && !peekTwoAhead("do"))
-						&& (closeScope && !peekTwoAhead(";"))){
-					value =  value + ")";
-					checkNext(")");
-				}
-				booleaN.setValue(value);
-
-				booleaN.setToken(booleanToken);
-
-				openScope = false;
-				closeScope = false;
-				expressions.add(booleaN);
-
-				executed = true;
-			}
-
-			if (executed) continue;
-
-			Matcher labelMatcher = namePattern.matcher(tokens.getFirst().getValue());
-
-			if (labelMatcher.find()) {
-
-				Token labelToken = tokens.removeFirst();
-
-				Label label = new Label(labelToken);
-
-				String name = (openScope) ? "(" + labelToken.getValue() : labelToken.getValue();
-
-				if ((closeScope && !peekTwoAhead("then"))
-						&& (closeScope && !peekTwoAhead("do"))
-						&& (closeScope && !peekTwoAhead(";"))){
-					name =  name + ")";
-					checkNext(")");
-				}
-
-				label.setLabel(name);
-
-				label.setToken(labelToken);
-
-				openScope = false;
-				closeScope = false;
-
-				expressions.add(label);
-
-				executed = true;
-			}
-
-			if (executed) continue;
-
-
+		} else {
+			throw new ParseException("This type of expression does not supported -> " + token.getValue() + " " + token.getRow(), token);
 		}
 
-		if (expressions.size() == 0) throw new ParseException("This type of expression does not exist --> "
-				+ tokens.getFirst().getValue() + " " + tokens.getFirst().getRow(), tokens.removeFirst());
-
-		return expressions;
-
-
 	}
-
-//	String name = tokens.getFirst().getValue();
-//
-//		System.out.println(name);
-//
-//	boolean isBinaryOperator = false;
-//
-//		for (String operator : Arrays.asList("and", "or", ">", "<", "==", ">=", "<=", "+", "-", "*", "/", "%")) {
-//
-//		if (peekNext(operator)) {
-//			isBinaryOperator = true;
-//			break;
-//		}
-//
-//	}
-//
-//	boolean isUnaryOperator = false;
-//
-//		for (String operator : Arrays.asList("not", "-")) {
-//
-//		if (peekNext(operator)) {
-//			isUnaryOperator = true;
-//			break;
-//		}
-//
-//	}
-//
-//	boolean isLiteral = false;
-//	String type =  null;
-//	Matcher matcherInteger = integerPattern.matcher(tokens.getFirst().getValue());
-//
-//
-//		if (tokens.getFirst().getValue().startsWith("" + (char)34) && tokens.getFirst().getValue().endsWith("" + (char)34)) {
-//		isLiteral = true;
-//		type = "String";
-//	} else if (matcherInteger.find()) {
-//		isLiteral = true;
-//		type = "Integer";
-//	} else if (tokens.getFirst().getValue().equals("true") || tokens.getFirst().getValue().equals("false")) {
-//		isLiteral = true;
-//		type = "Boolean";
-//	}
-//
-//	Matcher matcherLabel = namePattern.matcher(tokens.getFirst().getValue());
-//
-//
-//		if (isBinaryOperator) {
-//
-//		Token binaryOperatorToken = tokens.removeFirst();
-//
-//		BinaryOperation binaryOperator = new BinaryOperation(binaryOperatorToken);
-//
-//		binaryOperator.setOperator(binaryOperatorToken.getValue());
-//
-//		binaryOperator.setExpression(parseExpr(binaryOperator));
-//
-//		return binaryOperator;
-//
-//	} else if (isUnaryOperator) {
-//
-//		Token unaryOperatorToken = tokens.removeFirst();
-//
-//		UnaryOperator unaryOperator = new UnaryOperator(unaryOperatorToken);
-//
-//		unaryOperator.setOperator(unaryOperatorToken.getValue());
-//
-//		unaryOperator.setExpression(parseExpr(unaryOperator));
-//
-//		return unaryOperator;
-//
-//	} else if (isLiteral) {
-//
-//		Token literalToken = tokens.removeFirst();
-//
-//		Literal literal = new Literal(literalToken);
-//
-//		literal.setType(type);
-//
-////			if (peekNext(";")) checkNext(";");
-////			if (peekNext(")")) checkNext(")");
-//
-//		return literal;
-//
-//	} else if (matcherLabel.find()) {
-//
-//		Token labelToken = tokens.removeFirst();
-//
-//		Label label = new Label(labelToken);
-//
-////			if (peekNext(")")) checkNext(")");
-////
-//		if (!peekNext(")")) label.setExpression(parseExpr(label));
-////
-////			if (peekNext(";")) checkNext(";");
-//
-//		return label;
-//	}
-//
-//		throw new ParseException("This type of expression does not exist", tokens.removeFirst());
-
-
-
-//	private Statement while_statement() throws ParseException {
-//
-//		Token keyword = tokens.removeFirst();
-//
-//		checkNext("(");
-//
-//		BinaryOperation binaryOperation = new BinaryOperation(tokens.peekFirst(), tokens.removeFirst().toString(),
-//				tokens.removeFirst().toString(), tokens.removeFirst().toString());
-//
-//		checkNext(")");
-//
-//		checkNext("do");
-//
-//		WhileLoop statement = new WhileLoop(keyword);
-//		statement.setExpression(binaryOperation);
-//
-//		while(!peekNext("end")) {
-//			statement.setStatements(parseStmts());
-//		}
-//
-//		checkNext("while");
-//		checkNext(";");
-//
-//		return statement;
-//
-//
-//	}
-//
-//	private Statement return_statement() throws ParseException {
-//
-//		Token keyword = tokens.removeFirst();
-//
-//		Statement statement = new Return(keyword, tokens.removeFirst().toString());
-//
-//		checkNext(";");
-//
-//		return statement;
-//	}
-//
-//	private Statement print_line() {
-//
-//		Token keyword = tokens.removeFirst();
-//
-//		Statement statement = new Print_line(keyword, tokens.removeFirst().toString());
-//
-//		return statement;
-//
-//	}
-//
-//	private Statement print() {
-//
-//		Token keyword = tokens.removeFirst();
-//
-//		Statement statement = new Print(keyword, tokens.removeFirst().toString());
-//
-//		return statement;
-//
-//	}
-//
-//	private Statement ifthenelse() throws ParseException {
-//
-//		Token keyword = tokens.removeFirst();
-//
-//		checkNext("("); //remove '('
-//
-//		BinaryOperation binaryOperation = new BinaryOperation(tokens.peekFirst(), tokens.removeFirst().toString(),
-//				tokens.removeFirst().toString(), tokens.removeFirst().toString());
-//
-//
-//		checkNext(")"); //remove ')'
-//
-//		checkNext("then"); // remove "then" keyword
-//
-//		IfThenElseEndIf statement = new IfThenElseEndIf(keyword);
-//
-//		while (!peekNext("end")) {
-//
-//			if (peekNext("print")) {
-//				print();
-//			} else if (peekNext("print_line")) {
-//				print_line();
-//			} else if (peekNext("return")) {
-//				return_statement();
-//			} else if (peekNext("while")) {
-//				while_statement();
-//			} else if (peekNext("else")) {
-//
-//
-//			}
-//
-//		}
-//
-//
-//	}
-
-
 }

@@ -1,15 +1,13 @@
 package splat.parser.elements;
 
 import splat.lexer.Token;
-import splat.parser.elements.primitiveDataType.DataType;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class FunctionDecl extends Declaration {
 
-	private DataType returnType;
-	private String label;
+	private Type returnType;
 	private List<VariableDecl> parameters;
 	private List<VariableDecl> variables;
 	private List<Statement> statements;
@@ -22,21 +20,12 @@ public class FunctionDecl extends Declaration {
 
 	// Getters?
 
-
-	public DataType getReturnType() {
+	public Type getReturnType() {
 		return returnType;
 	}
 
-	public void setReturnType(DataType returnType) {
+	public void setReturnType(Type returnType) {
 		this.returnType = returnType;
-	}
-
-	public String getLabel() {
-		return label;
-	}
-
-	public void setLabel(String label) {
-		this.label = label;
 	}
 
 	public List<VariableDecl> getParameters() {
@@ -48,7 +37,9 @@ public class FunctionDecl extends Declaration {
 	}
 
 	public List<VariableDecl> getVariables() {
-		if (variables == null) return new ArrayList<>();
+		if (variables == null) {
+			this.setVariables(new ArrayList<>());
+		}
 		return variables;
 	}
 

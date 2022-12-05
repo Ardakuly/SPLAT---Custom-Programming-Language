@@ -73,6 +73,10 @@ public class Lexer {
 							else if (e.charAt(i) == (char)39 && quote.peek() != (char)39)
 								throw new LexException("Closing column does not match opening column", row, column);
 							else {
+								if (operator.length() > 0) {
+									tokens.add(new Token(operator.toString(), row, column-word.length()+1));
+									operator.setLength(0);
+								}
 								tokens.add(new Token( quote.peek() + word.toString() + quote.peek() + "", row, column-word.length()+1));
 								word.setLength(0);
 							}

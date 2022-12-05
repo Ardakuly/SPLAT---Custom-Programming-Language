@@ -2,14 +2,29 @@ package splat.parser.elements.subexpressions;
 
 import splat.lexer.Token;
 import splat.parser.elements.Expression;
+import splat.parser.elements.FunctionDecl;
+import splat.parser.elements.Type;
+import java.util.Map;
 
 public class Literal extends Expression {
 
     private String value;
-    private String type;
+    private Type type;
 
     public Literal(Token tok) {
         super(tok);
+    }
+
+    public Literal(Token tok, String value, Type type) {
+        super(tok);
+        this.value = value;
+        this.type = type;
+    }
+
+
+    @Override
+    public Type analyzeAndGetType(Map<String, FunctionDecl> funcMap, Map<String, Type> varAndParamMap) {
+        return this.getType();
     }
 
     public String getValue() {
@@ -20,11 +35,11 @@ public class Literal extends Expression {
         this.value = value;
     }
 
-    public String getType() {
+    public Type getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(Type type) {
         this.type = type;
     }
 }
