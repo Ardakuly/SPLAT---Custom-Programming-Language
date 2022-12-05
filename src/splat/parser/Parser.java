@@ -83,7 +83,7 @@ public class Parser {
 			
 			checkNext("begin");
 
-			List<Statement> stmts = parseStmts(new ArrayList<>(), "0program");
+			List<Statement> stmts = parseStmts(new ArrayList<>());
 			
 			checkNext("end");
 			checkNext(";");
@@ -204,7 +204,7 @@ public class Parser {
 
 		if (!peekNext("end")) {
 
-			functionDecl.setStatements(new ArrayList<>(parseStmts(new ArrayList<>(), functionDecl.getLabel())));
+			functionDecl.setStatements(new ArrayList<>(parseStmts(new ArrayList<>())));
 
 		}
 
@@ -267,17 +267,17 @@ public class Parser {
 	 * <stmts> ::= (  <stmt>  )*
 	 */
 
-	private List<Statement> parseStmts(List<Statement> statements, String whereItBelongs) throws ParseException {
+	private List<Statement> parseStmts(List<Statement> statements) throws ParseException {
 
 		while (!peekNext("end") && !peekNext("else")) {
-			statements = parseStmt(statements, whereItBelongs);
+			statements = parseStmt(statements);
 		}
 
 		return statements;
 
 	}
 
-	private List<Statement> parseStmt(List<Statement> statements, String whereItBelongs) throws ParseException {
+	private List<Statement> parseStmt(List<Statement> statements) throws ParseException {
 
 		if (peekNext("end")) return statements;
 
@@ -293,16 +293,16 @@ public class Parser {
 
 			if(peekNext("(") && peekTwoAhead("(")) checkNext("("); //remove '('
 
-			ifStatement.setExpression(parseExpr(whereItBelongs));
+			ifStatement.setExpression(parseExpr());
 
 			if(peekNext(")")) checkNext(")"); //remove '('
 			checkNext("then"); //remove 'then'
 
-			ifStatement.setStatementsThen(parseStmts(new ArrayList<>(), whereItBelongs));
+			ifStatement.setStatementsThen(parseStmts(new ArrayList<>()));
 
 			if (peekNext("else")) {
 				checkNext("else"); //remove 'else'
-				ifStatement.setStatementsElse(parseStmts(new ArrayList<>(), whereItBelongs));
+				ifStatement.setStatementsElse(parseStmts(new ArrayList<>()));
 			}
 
 			checkNext("end"); //remove 'end'
@@ -323,7 +323,7 @@ public class Parser {
 
 			if (peekTwoAhead(")")) throw new ParseException("Invalid use of parenthesis", tokens.getFirst());
 
-			printStatement.setExpressions(parseExpr(whereItBelongs));
+			printStatement.setExpressions(parseExpr());
 
 			if (peekNext(")")) checkNext(")");
 
@@ -353,7 +353,7 @@ public class Parser {
 
 			if (peekNext("(") && peekTwoAhead("(")) checkNext("(");
 
-			if (!peekNext(";")) returnStatement.setExpression(parseExpr(whereItBelongs));
+			if (!peekNext(";")) returnStatement.setExpression(parseExpr());
 
 			if (peekNext(")")) checkNext(")");
 
@@ -371,13 +371,13 @@ public class Parser {
 
 			if(peekNext("(") && peekTwoAhead("(")) checkNext("(");
 
-			whileLoopStatement.setExpression(parseExpr(whereItBelongs));
+			whileLoopStatement.setExpression(parseExpr());
 
 			if(peekNext(")")) checkNext(")");
 
 			checkNext("do");
 
-			whileLoopStatement.setStatements(parseStmt(new ArrayList<>(), whereItBelongs));
+			whileLoopStatement.setStatements(parseStmt(new ArrayList<>()));
 
 			checkNext("end");
 			checkNext("while");
@@ -402,7 +402,7 @@ public class Parser {
 
 			if (peekNext("(") && peekTwoAhead("(")) checkNext("(");
 
-			initializationStatement.setLiteral(parseExpr(whereItBelongs));
+			initializationStatement.setLiteral(parseExpr());
 
 			if (peekNext(")")) checkNext(")");
 
@@ -424,7 +424,7 @@ public class Parser {
 
 			while (!peekNext(")")) {
 				if (peekNext(",")) checkNext(",");
-				Expression expression = parseExpr(whereItBelongs);
+				Expression expression = parseExpr();
 				if (expression != null) arguments.add(expression);
 			}
 
@@ -449,7 +449,7 @@ public class Parser {
 	}
 
 
-	private Expression parseExpr(String whereItBelongs) throws ParseException {
+	private Expression parseExpr() throws ParseException {
 
 		Token token = tokens.getFirst();
 
@@ -497,7 +497,7 @@ public class Parser {
 			while (!peekNext(")")) {
 				if (peekNext(",")) checkNext(",");
 
-				arguments.add(parseExpr(whereItBelongs));
+				arguments.add(parseExpr());
 			}
 
 			checkNext(")");
@@ -528,7 +528,7 @@ public class Parser {
 
 			if (isUnaryOperator) {
 				Token unaryOperatorToken = tokens.removeFirst();
-				unaryOperatorExpression = new UnaryOperator(unaryOperatorToken, unaryOperatorToken.getValue(), parseExpr(whereItBelongs));
+				unaryOperatorExpression = new UnaryOperator(unaryOperatorToken, unaryOperatorToken.getValue(), parseExpr());
 				checkNext(")");
 			}
 
@@ -542,10 +542,10 @@ public class Parser {
 			}
 
 			if (isBinaryOperator) {
-				Expression expressionLeft = (isUnaryOperator) ?  unaryOperatorExpression : parseExpr(whereItBelongs);
+				Expression expressionLeft = (isUnaryOperator) ?  unaryOperatorExpression : parseExpr();
 				Token binaryOperatorToken = tokens.removeFirst();
 				Expression binaryOperatorExpression = new BinaryOperation
-						(binaryOperatorToken, binaryOperatorToken.getValue(), expressionLeft, parseExpr(whereItBelongs));
+						(binaryOperatorToken, binaryOperatorToken.getValue(), expressionLeft, parseExpr());
 				checkNext(")");
 
 				boolean isLeft = false;
@@ -559,7 +559,7 @@ public class Parser {
 				if (isLeft) {
 					Token binaryOperatorTokenLeft = tokens.removeFirst();
 					Expression binaryOperatorLeftExpression = new BinaryOperation
-							(binaryOperatorTokenLeft, binaryOperatorTokenLeft.getValue(), binaryOperatorExpression, parseExpr(whereItBelongs));
+							(binaryOperatorTokenLeft, binaryOperatorTokenLeft.getValue(), binaryOperatorExpression, parseExpr());
 					checkNext(")");
 
 					return binaryOperatorLeftExpression;
