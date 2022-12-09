@@ -3,7 +3,6 @@ begin ;
 while (a == b)
 do
     flag1 := true ;
-
 end do loop
 
 

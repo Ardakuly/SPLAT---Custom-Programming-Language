@@ -29,7 +29,6 @@ public class SemanticAnalyzer {
 		// Checks to make sure we don't use the same labels more than once
 		// for our program functions and variables 
 		checkNoDuplicateProgLabels(); //checking declaration of function on duplicates
-		
 		// This sets the maps that will be needed later when we need to
 		// typecheck variable references and function calls in the 
 		// program body
@@ -60,11 +59,10 @@ public class SemanticAnalyzer {
 		Statement returnStatement = null;
 
 		for (Statement stmt : funcDecl.getStatements()) {
-			if (stmt.getClass() == Return.class) returnStatement = stmt;
 			stmt.analyze(funcMap, varAndParamMap);
 		}
 
-		if (varAndParamMap.get("0return") != Type.Void && returnStatement == null) {
+		if (varAndParamMap.get("0return") != Type.Void && !varAndParamMap.containsKey("0ActualReturn")) {
 			throw new SemanticAnalysisException("Function need return statement", funcDecl);
 		}
 

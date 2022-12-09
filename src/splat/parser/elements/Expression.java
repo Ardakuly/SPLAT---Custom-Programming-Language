@@ -1,25 +1,17 @@
 package splat.parser.elements;
 
+import splat.executor.ExecutionException;
+import splat.executor.Value;
 import splat.lexer.Token;
 import splat.semanticanalyzer.SemanticAnalysisException;
-
 import java.util.Map;
 
 public abstract class Expression extends ASTElement {
-
-	private Token token;
 
 	public Expression(Token tok) {
 		super(tok);
 	}
 
-	public Token getToken() {
-		return token;
-	}
-
-	public void setToken(Token token) {
-		this.token = token;
-	}
 
 	/**
 	 * This will be needed for Phase 3 - this abstract method will need to be
@@ -58,7 +50,7 @@ public abstract class Expression extends ASTElement {
 	 * contains variables or parameters -- we use this map to keep track of the
 	 * values of the items that are currently in scope
 	 */
-//	public abstract Value evaluate(Map<String, FunctionDecl> funcMap,
-//                                 Map<String, Value> varAndParamMap);
+	public abstract Value evaluate(Map<String, FunctionDecl> funcMap,
+								   Map<String, Value> varAndParamMap) throws ExecutionException;
 
 }

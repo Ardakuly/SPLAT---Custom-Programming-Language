@@ -13,10 +13,13 @@ import splat.parser.elements.substatements.*;
 public class Parser {
 
 	private LinkedList<Token> tokens;
+
 	private final Pattern namePattern = Pattern.compile("[a-zA-Z][a-zA-Z0-9_]*");
+
 	private final Pattern integerPattern = Pattern.compile("^[1-9][0-9]*$");
+
 	private List<Statement> statements = new ArrayList<>();
-	private Set<String> varExist = new HashSet<>();
+
 	private List<String> declarations = new ArrayList<>();
 
 
@@ -140,9 +143,13 @@ public class Parser {
 		Matcher matcher = namePattern.matcher(label.getValue());
 
 		if (matcher.matches()) {
+
 			functionDecl.setLabel(label.getValue());
+
 		} else {
+
 			throw new ParseException("Function name does not meet requirements", new Token(label.getValue(), label.getRow(), label.getColumn()));
+
 		}
 
 		//------------------ Parameters--------------------//
@@ -226,10 +233,10 @@ public class Parser {
 		Token labelToken = tokens.removeFirst();
 
 		if (Arrays.asList("while", "if", "print", "print_line", "return").contains(labelToken.getValue())) {
-			throw new ParseException("Invalid variable name", labelToken);
-		}
 
-		varExist.add(labelToken.getValue());
+			throw new ParseException("Invalid variable name", labelToken);
+
+		}
 
 		tokens.removeFirst(); // remove ":"
 
@@ -240,20 +247,32 @@ public class Parser {
 		Matcher matcher = namePattern.matcher(labelToken.getValue());
 
 		if (matcher.matches()) {
+
 			varDecl.setLabel(labelToken.getValue());
+
 		} else {
+
 			throw new ParseException("Variable name does not meet requirements", labelToken);
+
 		}
 
 		if (Type.String.name().equals(typeToken.getValue()) ) {
+
 			varDecl.setType(Type.String);
+
 		} else if (Type.Integer.name().equals(typeToken.getValue())) {
+
 			varDecl.setType(Type.Integer);
+
 		} else if (Type.Boolean.name().equals(typeToken.getValue())) {
+
 			varDecl.setType(Type.Boolean);
+
 		} else {
+
 			throw new ParseException("DataType for variable does not meet requirements "
 					+ typeToken.getValue() + " " + typeToken.getRow(), typeToken);
+
 		}
 
 		if (peekNext(";")) checkNext(";");
@@ -270,7 +289,7 @@ public class Parser {
 	private List<Statement> parseStmts(List<Statement> statements) throws ParseException {
 
 		while (!peekNext("end") && !peekNext("else")) {
-			statements = parseStmt(statements);
+			parseStmt(statements);
 		}
 
 		return statements;
@@ -293,7 +312,16 @@ public class Parser {
 
 			if(peekNext("(") && peekTwoAhead("(")) checkNext("("); //remove '('
 
-			ifStatement.setExpression(parseExpr());
+			Expression previous = null;
+
+			while (!peekNext("then")) {
+				previous = parseExpr(previous);
+
+				if (peekNext(")")) checkNext(")");
+
+			}
+
+			ifStatement.setExpression(previous);
 
 			if(peekNext(")")) checkNext(")"); //remove '('
 			checkNext("then"); //remove 'then'
@@ -319,11 +347,22 @@ public class Parser {
 
 			Print printStatement = new Print(printToken);
 
-			if (peekNext("(") && peekTwoAhead("(")) checkNext("(");
+			if (peekNext("(") && peekTwoAhead("(")){
+				checkNext("(");
+			}
 
 			if (peekTwoAhead(")")) throw new ParseException("Invalid use of parenthesis", tokens.getFirst());
 
-			printStatement.setExpressions(parseExpr());
+			Expression previous = null;
+
+			while (!peekNext(";")) {
+
+				previous = parseExpr(previous);
+
+				if (peekNext(")")) checkNext(")");
+			}
+
+			printStatement.setExpressions(previous);
 
 			if (peekNext(")")) checkNext(")");
 
@@ -353,7 +392,19 @@ public class Parser {
 
 			if (peekNext("(") && peekTwoAhead("(")) checkNext("(");
 
-			if (!peekNext(";")) returnStatement.setExpression(parseExpr());
+			if (!peekNext(";")) {
+
+				Expression previous = null;
+
+				while (!peekNext(";")) {
+
+					previous = parseExpr(previous);
+
+					if (peekNext(")")) checkNext(")");
+				}
+
+				returnStatement.setExpression(previous);
+			}
 
 			if (peekNext(")")) checkNext(")");
 
@@ -371,13 +422,22 @@ public class Parser {
 
 			if(peekNext("(") && peekTwoAhead("(")) checkNext("(");
 
-			whileLoopStatement.setExpression(parseExpr());
+			Expression previous = null;
 
-			if(peekNext(")")) checkNext(")");
+			while (!peekNext("do")) {
+
+				previous = parseExpr(previous);
+
+				if (peekNext(")")) checkNext(")");
+			}
+
+			whileLoopStatement.setExpression(previous);
+
+			//if(peekNext(")")) checkNext(")");
 
 			checkNext("do");
 
-			whileLoopStatement.setStatements(parseStmt(new ArrayList<>()));
+			whileLoopStatement.setStatements(parseStmts(new ArrayList<>()));
 
 			checkNext("end");
 			checkNext("while");
@@ -400,9 +460,18 @@ public class Parser {
 			checkNext("=");
 
 
-			if (peekNext("(") && peekTwoAhead("(")) checkNext("(");
+			while (peekNext("(") && peekTwoAhead("(")) checkNext("(");
 
-			initializationStatement.setLiteral(parseExpr());
+			Expression previous = null;
+
+			while (!peekNext(";")) {
+
+				previous = parseExpr(previous);
+
+				if (peekNext(")")) checkNext(")");
+			}
+
+			initializationStatement.setLiteral(previous);
 
 			if (peekNext(")")) checkNext(")");
 
@@ -418,14 +487,18 @@ public class Parser {
 
 			FunctionCall functionCallStatement = new FunctionCall(functionCallToken);
 
-			if(peekNext("(") && peekTwoAhead("(")) checkNext("(");
+			if(peekNext("(")) checkNext("(");
 
 			List<Expression> arguments = new ArrayList<>();
 
-			while (!peekNext(")")) {
+			while (!peekNext(")") && !peekNext(";")) {
+
 				if (peekNext(",")) checkNext(",");
-				Expression expression = parseExpr();
+
+				Expression expression = parseExpr(null);
+
 				if (expression != null) arguments.add(expression);
+
 			}
 
 			functionCallStatement.setArguments(arguments);
@@ -449,7 +522,12 @@ public class Parser {
 	}
 
 
-	private Expression parseExpr() throws ParseException {
+	private Expression parseExpr(Expression previous) throws ParseException {
+
+		// Literals + negative Integer ++++
+		// label +++
+		// FunctionCall
+		// Unary Operator && Binary Operator
 
 		Token token = tokens.getFirst();
 
@@ -460,6 +538,30 @@ public class Parser {
 		Matcher literal = integerPattern.matcher(token.getValue());
 
 		boolean isMatchLiteral = literal.find();
+
+		Matcher negativeInteger = integerPattern.matcher(tokens.get(2).getValue());
+
+		// -------------------- NEGATIVE INTEGER ---------------------------------------------//
+
+		if (peekNext("(") && tokens.get(1).getValue().equals("-") && negativeInteger.find() && tokens.get(3).getValue().equals(")")) {
+
+			checkNext("(");
+
+			tokens.removeFirst();
+
+			Token literalToken = tokens.removeFirst();
+
+			Expression expression = new Literal(literalToken, "-" + literalToken.getValue(), Type.Integer);
+
+			checkNext(")");
+
+			return expression;
+
+		}
+
+		// -------------------- NEGATIVE INTEGER ---------------------------------------------//
+
+		// -------------------- Literals -----------------------------------------------------//
 
 		if (isMatchLiteral || tokens.getFirst().getValue().equals("0")) {
 
@@ -485,95 +587,182 @@ public class Parser {
 
 			return expression;
 
-		}else if (isMatchName && !peekTwoAhead("(") && !token.getValue().equals("not")) {
+			// -------------------- Literals -----------------------------------------------------//
+
+		} else if (isMatchName && !peekTwoAhead("(") && !token.getValue().equals("not")) {
+
+			// -------------------- Label -----------------------------------------------------//
+
 			Token labelToken = tokens.removeFirst();
+
 			Expression label = new Label(labelToken, labelToken.getValue());
+
 			return label;
+
+			// -------------------- Label -----------------------------------------------------//
 		} else if (isMatchName && peekTwoAhead("(")) {
+
+			// -------------------- Function -----------------------------------------------------//
+
 			Token nVFunctionCallToken = tokens.removeFirst();
+
 			checkNext("(");
+
 			List<Expression> arguments = new LinkedList<>();
 
 			while (!peekNext(")")) {
+
 				if (peekNext(",")) checkNext(",");
 
-				arguments.add(parseExpr());
+				arguments.add(parseExpr(null));
 			}
 
 			checkNext(")");
 
-			//added func label
 			Expression nVFunctionCall = new Function(nVFunctionCallToken, nVFunctionCallToken.getValue(), arguments);
 
 			return nVFunctionCall;
 
-		} else if (peekNext("(")) {
+			// -------------------- Function -----------------------------------------------------//
+
+		} else if (previous == null && (peekNext("(") || isBinaryExpression())) {
 
 			checkNext("(");
 
-			boolean isUnaryOperator = false;
+			if (peekTwoAhead(")")) throw new ParseException("Need Binary or Unary expressions", tokens.getFirst());
 
-			for (String operator : Arrays.asList("-", "not")) {
+			// -------------------- Unary Operator -----------------------------------------------------//
 
-//				Matcher matcher = namePattern.matcher(tokens.get(1).getValue());
-				if (peekNext(operator)) {
-					isUnaryOperator = true;
-					break;
-				}
-
-			}
-
+			boolean isUnaryOperator = isUnaryOperator();
 
 			Expression unaryOperatorExpression = null;
 
 			if (isUnaryOperator) {
+
 				Token unaryOperatorToken = tokens.removeFirst();
-				unaryOperatorExpression = new UnaryOperator(unaryOperatorToken, unaryOperatorToken.getValue(), parseExpr());
+
+				unaryOperatorExpression = new UnaryOperator(unaryOperatorToken, unaryOperatorToken.getValue(), parseExpr(null));
+
 				checkNext(")");
+
 			}
 
+			// -------------------- Unary Operator -----------------------------------------------------//
 
-			boolean isBinaryOperator = false;
+			// -------------------- Binary Operator -----------------------------------------------------//
+			boolean isBinaryOperatorExpression = isBinaryExpression();
 
-			for (String operator : Arrays.asList("and", "or", ">", "<", "==", ">=", "<=", "+", "-", "*", "/", "%")) {
-				if (peekNext(operator) || peekTwoAhead(operator)) {
-					isBinaryOperator = true;
-				}
-			}
+			if (isBinaryOperatorExpression) { //   ((((x*x)*x)-((y*y)*10))+(x+(y/10)));
 
-			if (isBinaryOperator) {
-				Expression expressionLeft = (isUnaryOperator) ?  unaryOperatorExpression : parseExpr();
+				Expression expressionLeft = (isUnaryOperator) ?  unaryOperatorExpression : parseExpr(null);
+
 				Token binaryOperatorToken = tokens.removeFirst();
+
 				Expression binaryOperatorExpression = new BinaryOperation
-						(binaryOperatorToken, binaryOperatorToken.getValue(), expressionLeft, parseExpr());
+						(binaryOperatorToken, binaryOperatorToken.getValue(), expressionLeft, parseExpr(null));
+
 				checkNext(")");
 
-				boolean isLeft = false;
+				Expression left = binaryOperatorExpression;
 
-				for (String operator : Arrays.asList("and", "or", ">", "<", "==", ">=", "<=", "+", "-", "*", "/", "%")) {
-					if (peekNext(operator)) {
-						isLeft = true;
-					}
-				}
+				if (isBinaryExpression() && !peekNext(")")) {
 
-				if (isLeft) {
-					Token binaryOperatorTokenLeft = tokens.removeFirst();
-					Expression binaryOperatorLeftExpression = new BinaryOperation
-							(binaryOperatorTokenLeft, binaryOperatorTokenLeft.getValue(), binaryOperatorExpression, parseExpr());
-					checkNext(")");
+					Token binaryOperatorToken2 = tokens.removeFirst();
 
-					return binaryOperatorLeftExpression;
+					Expression binaryOperatorExpression2 = new BinaryOperation
+							(binaryOperatorToken2, binaryOperatorToken2.getValue(), left, parseExpr(null));
+
+					if (peekNext(")") && peekTwoAhead(")")) checkNext(")");
+
+					return binaryOperatorExpression2;
+
 				}
 
 				return binaryOperatorExpression;
+
 			}
 
-
 			return unaryOperatorExpression;
+			// -------------------- Binary Operator -----------------------------------------------------//
+
+		} else if (previous != null && (peekNext("(") || isBinaryExpression())) {
+
+			// -------------------- Binary Operator with previous  -----------------------------------------------------//
+
+			if (peekNext("(")) checkNext("(");
+
+			boolean isBinaryOperatorExpression = isBinaryExpression();
+
+			if (isBinaryOperatorExpression) {
+
+				Expression previous1 = previous;
+
+				Token binaryOperatorToken = tokens.removeFirst();
+
+				if (peekNext("(") && peekTwoAhead("(")) checkNext("(");
+
+				Expression binaryOperatorExpression = new BinaryOperation(binaryOperatorToken, binaryOperatorToken.getValue(), previous1, parseExpr(null));
+
+				checkNext(")");
+
+				while(peekNext(")") && peekTwoAhead(")")) checkNext(")");
+
+				Expression left = binaryOperatorExpression;
+
+				if (isBinaryExpression()) {
+
+					Token binaryOperatorToken2 = tokens.removeFirst();
+
+					Expression binaryOperatorExpression2 = new BinaryOperation
+							(binaryOperatorToken2, binaryOperatorToken2.getValue(), left, parseExpr(null));
+
+					checkNext(")");
+
+					return binaryOperatorExpression2;
+
+				}
+
+				return binaryOperatorExpression;
+
+				// -------------------- Binary Operator with previous  -----------------------------------------------------//
+
+			}
+
+			return null;
 
 		} else {
+
 			throw new ParseException("This type of expression does not supported -> " + token.getValue() + " " + token.getRow(), token);
+
 		}
 
 	}
+
+	private boolean isBinaryExpression() {
+
+		for (String operator : Arrays.asList("and", "or", ">", "<", "==", ">=", "<=", "+", "-", "*", "/", "%")) {
+
+			if (peekNext(operator) || peekTwoAhead(operator)) {
+				return true;
+			}
+
+		}
+
+		return false;
+	}
+
+	private boolean isUnaryOperator() {
+
+		for (String operator : Arrays.asList("-", "not")) {
+
+			if (peekNext(operator)) {
+				return true;
+			}
+
+		}
+
+		return false;
+
+	}
+
 }

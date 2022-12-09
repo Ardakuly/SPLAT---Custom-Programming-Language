@@ -1,14 +1,14 @@
 package splat;
 
-
+import splat.executor.Executor;
 import splat.lexer.Lexer;
 import splat.lexer.Token;
 import splat.parser.Parser;
 import splat.parser.elements.ProgramAST;
-
+import splat.semanticanalyzer.SemanticAnalyzer;
 import java.io.File;
 import java.util.LinkedList;
-import java.util.List;
+
 
 public class Splat {
 
@@ -27,14 +27,14 @@ public class Splat {
 		// Step 2.  Parse
 		 Parser parser = new Parser(tokens);
 		 ProgramAST progAST = parser.parse();
-		
+
 		// Step 3.  Semantic Analysis
-		// SemanticAnalyzer analyzer = new SemanticAnalyzer(progAST);
-		// analyzer.analyze();
-		
-		// Step 4.  Executor
-		// Executor executor = new Executor(progAST);
-		// executor.runProgram();
+		 SemanticAnalyzer analyzer = new SemanticAnalyzer(progAST);
+		 analyzer.analyze();
+
+		 // Step 4.  Executor
+		 Executor executor = new Executor(progAST);
+		 executor.runProgram();
 		
 		// THE END!
 	}

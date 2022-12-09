@@ -1,5 +1,6 @@
 package splat.parser.elements.subexpressions;
 
+import splat.executor.Value;
 import splat.lexer.Token;
 import splat.parser.elements.Expression;
 import splat.parser.elements.FunctionDecl;
@@ -26,6 +27,12 @@ public class Label extends Expression {
         if (!varAndParamMap.containsKey(this.getLabel())) {
             throw new SemanticAnalysisException("Variable '" + this.label  + "' is not defined", this);
         }
+
+        return varAndParamMap.get(this.getLabel());
+    }
+
+    @Override
+    public Value evaluate(Map<String, FunctionDecl> funcMap, Map<String, Value> varAndParamMap) {
 
         return varAndParamMap.get(this.getLabel());
     }

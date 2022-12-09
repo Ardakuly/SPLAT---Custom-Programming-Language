@@ -1,5 +1,9 @@
 package splat.parser.elements.subexpressions;
 
+import splat.executor.Value;
+import splat.executor.subvalues.BooleanValue;
+import splat.executor.subvalues.IntegerValue;
+import splat.executor.subvalues.StringValue;
 import splat.lexer.Token;
 import splat.parser.elements.Expression;
 import splat.parser.elements.FunctionDecl;
@@ -25,6 +29,16 @@ public class Literal extends Expression {
     @Override
     public Type analyzeAndGetType(Map<String, FunctionDecl> funcMap, Map<String, Type> varAndParamMap) {
         return this.getType();
+    }
+
+    @Override
+    public Value evaluate(Map<String, FunctionDecl> funcMap, Map<String, Value> varAndParamMap) {
+
+        if (this.getType() == Type.Integer) return new IntegerValue(Integer.parseInt(this.getValue()), this.getType());
+        else if (this.getType() == Type.String) return new StringValue(this.getValue(), this.getType());
+        else if (this.getType() == Type.Boolean) return new BooleanValue((this.getValue().equals("true")) ? true : false, this.getType());
+
+        return null;
     }
 
     public String getValue() {

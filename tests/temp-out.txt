@@ -1,0 +1,4 @@
+"program started"
+
+"param2 is true"
+Internal error!!! The main program body cannot have a return statement -- this should have been caught during semantic analysis!
